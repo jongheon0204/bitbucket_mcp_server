@@ -1,0 +1,31 @@
+{
+  "name": "bitbucket-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server exposing Bitbucket Data Center PR resources (metadata, diff, files, comments) as tools for agentic review workflows.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "bitbucket-mcp-server": "dist/index.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  }
+}
