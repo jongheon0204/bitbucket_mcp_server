@@ -12,7 +12,7 @@
 `GET {BITBUCKET_BASE_URL}/rest/api/1.0/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/diff/{filePath}`
 
 - 내부적으로 **파일 수(N)만큼 N회** 호출한다 (Bitbucket에 다중 파일 diff API가 없음). 줄어드는 것은 MCP tool-call 횟수이지 Bitbucket REST 호출 횟수가 아니다.
-- 호출은 병렬로 수행하되 rate limit(429) 방지를 위해 동시 실행 수를 제한한다.
+- 호출은 병렬로 수행하되 rate limit(429) 방지를 위해 동시 실행 수를 5개로 제한한다.
 
 ## Input
 | 파라미터 | 타입 | 필수 | 설명 |
@@ -48,8 +48,8 @@ diff 본문 토큰은 개별 호출과 동일하고, 차이는 tool-call 오버�
 
 ## 에러 케이스
 - `filePaths` 비어 있음 또는 20개 초과 → `VALIDATION_ERROR` (호출 전체 실패)
-- PR 없음 → `NOT_FOUND` (호출 전체 실패)
-- 권한 없음 → `AUTH_ERROR` (호출 전체 실패)
+- PR 없음 → `NOT_FOUND` (호출 전체 실패). 파일별 diff API는 PR이 없을 때도 404를 반환하므로, **모든 파일이 `NOT_FOUND`이면** PR 없음으로 보고 호출 전체를 실패 처리
+- 권한 없음 → `AUTH_ERROR` (한 파일이라도 발생하면 호출 전체 실패)
 - 일부 파일 경로 오류 → 해당 항목만 `diffs[].error.code = "NOT_FOUND"`, 나머지 파일은 정상 반환 (부분 성공)
 - 일부 파일 재시도 후에도 5xx/타임아웃 → 해당 항목만 `diffs[].error.code = "UPSTREAM_ERROR"`
 - 재시도 정책은 `error-handling.md`를 파일별로 동일하게 적용

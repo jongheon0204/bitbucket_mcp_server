@@ -28,7 +28,9 @@ bitbucket-mcp-server/
         ├── get_file_diff.md
         ├── get_file_content.md
         ├── get_pr_comments.md
-        └── post_pr_comment.md
+        ├── post_pr_comment.md
+        ├── get_file_diffs.md
+        └── get_pr_context.md
 ```
 
 ## Claude Code 시작 시 제안 프롬프트
@@ -44,7 +46,7 @@ docs/tool-definitions/ 하위 문서 순서대로 tool을 하나씩 구현하고
 
 ## 구현 (Node.js + TypeScript, stdio)
 
-`docs/` 산출물을 기반으로 `src/`에 MCP tool 7종을 구현했습니다.
+`docs/` 산출물을 기반으로 `src/`에 MCP tool 9종을 구현했습니다.
 
 ```
 src/
@@ -56,9 +58,10 @@ src/
 ├── lib/
 │   ├── diff.ts                  # Bitbucket diff JSON → unified diff / hunk 변환
 │   ├── pagination.ts             # start/nextPageStart/isLastPage 페이지네이션
+│   ├── concurrency.ts             # batch tool용 동시 실행 수 제한
 │   ├── common-schemas.ts          # projectKey/repositorySlug/pullRequestId 공통 zod 스키마
 │   └── register-tool.ts            # 공통 success/error 응답 envelope + 로깅 wrapper
-└── tools/                            # get_pr_metadata 등 7개 tool (문서 1:1 대응)
+└── tools/                            # get_pr_metadata 등 9개 tool (문서 1:1 대응)
 ```
 
 ### 실행

@@ -3,7 +3,7 @@ import type { BitbucketClient } from "../bitbucketClient.js";
 import { encodePathSegments } from "../bitbucketClient.js";
 import { prRefSchema } from "../lib/common-schemas.js";
 import { BitbucketMcpError } from "../errors.js";
-import { buildFileHunks, findFileDiff, type BitbucketDiffResponse } from "../lib/diff.js";
+import { buildFileHunks, findFileDiff, type BitbucketDiffResponse, type FileHunk } from "../lib/diff.js";
 import type { ToolDefinition } from "../lib/register-tool.js";
 
 const inputSchema = {
@@ -11,7 +11,7 @@ const inputSchema = {
   filePath: z.string().min(1).describe("list_changed_files 결과의 path"),
 };
 
-const hunkSchema = z.object({
+export const hunkSchema = z.object({
   header: z.string(),
   oldLines: z.array(z.string()),
   newLines: z.array(z.string()),
@@ -22,6 +22,25 @@ const outputSchema = {
   hunks: z.array(hunkSchema),
 };
 
+/** Fetches one file's PR diff and converts it to hunks. Shared with get_file_diffs. */
+export async function fetchFileHunks(
+  client: BitbucketClient,
+  ref: { projectKey: string; repositorySlug: string; pullRequestId: number },
+  filePath: string
+): Promise<FileHunk[]> {
+  const res = await client.getJson<BitbucketDiffResponse>(
+    `/projects/${ref.projectKey}/repos/${ref.repositorySlug}/pull-requests/${ref.pullRequestId}/diff/${encodePathSegments(
+      filePath
+    )}`
+  );
+
+  const fileDiff = findFileDiff(res, filePath);
+  if (!fileDiff) {
+    throw new BitbucketMcpError("NOT_FOUND", `PR diff에서 파일을 찾을 수 없습니다: ${filePath}`);
+  }
+  return buildFileHunks(fileDiff);
+}
+
 export const getFileDiffTool: ToolDefinition<typeof inputSchema, typeof outputSchema> = {
   name: "get_file_diff",
   title: "Get File Diff",
@@ -31,23 +50,9 @@ export const getFileDiffTool: ToolDefinition<typeof inputSchema, typeof outputSc
   inputSchema,
   outputSchema,
   async handler(client: BitbucketClient, input) {
-    const res = await client.getJson<BitbucketDiffResponse>(
-      `/projects/${input.projectKey}/repos/${input.repositorySlug}/pull-requests/${input.pullRequestId}/diff/${encodePathSegments(
-        input.filePath
-      )}`
-    );
-
-    const fileDiff = findFileDiff(res, input.filePath);
-    if (!fileDiff) {
-      throw new BitbucketMcpError(
-        "NOT_FOUND",
-        `PR diff에서 파일을 찾을 수 없습니다: ${input.filePath}`
-      );
-    }
-
     return {
       filePath: input.filePath,
-      hunks: buildFileHunks(fileDiff),
+      hunks: await fetchFileHunks(client, input, input.filePath),
     };
   },
 };

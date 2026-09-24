@@ -108,6 +108,42 @@ export interface TruncatedText {
   truncated: boolean;
 }
 
+export interface TruncatedHunks {
+  hunks: FileHunk[];
+  truncated: boolean;
+}
+
+/**
+ * Keeps hunk lines (oldLines then newLines, hunk by hunk) until the UTF-8 byte budget
+ * is spent. Lines are never split; hunks past the budget are dropped.
+ */
+export function truncateHunksToBytes(hunks: FileHunk[], maxBytes: number): TruncatedHunks {
+  let remaining = maxBytes;
+  let truncated = false;
+  const take = (lines: string[]): string[] => {
+    const kept: string[] = [];
+    for (const line of lines) {
+      const size = Buffer.byteLength(line, "utf8");
+      if (size > remaining) {
+        truncated = true;
+        break;
+      }
+      remaining -= size;
+      kept.push(line);
+    }
+    return kept;
+  };
+
+  const result: FileHunk[] = [];
+  for (const hunk of hunks) {
+    if (truncated) break;
+    const oldLines = take(hunk.oldLines);
+    const newLines = truncated ? [] : take(hunk.newLines);
+    result.push({ header: hunk.header, oldLines, newLines });
+  }
+  return { hunks: result, truncated };
+}
+
 /** Truncates text to a byte budget (UTF-8), matching MAX_FILE_CONTENT_BYTES semantics. */
 export function truncateToBytes(text: string, maxBytes: number): TruncatedText {
   const buf = Buffer.from(text, "utf8");
