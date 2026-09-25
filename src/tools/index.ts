@@ -10,6 +10,8 @@ import { getFileDiffTool } from "./getFileDiff.js";
 import { makeGetFileContentTool } from "./getFileContent.js";
 import { getPrCommentsTool } from "./getPrComments.js";
 import { postPrCommentTool } from "./postPrComment.js";
+import { makeGetFileDiffsTool } from "./getFileDiffs.js";
+import { getPrContextTool } from "./getPrContext.js";
 
 export function registerAllTools(server: McpServer, client: BitbucketClient, config: AppConfig): void {
   registerBitbucketTool(server, client, getPrMetadataTool);
@@ -19,4 +21,6 @@ export function registerAllTools(server: McpServer, client: BitbucketClient, con
   registerBitbucketTool(server, client, makeGetFileContentTool(config));
   registerBitbucketTool(server, client, getPrCommentsTool);
   registerBitbucketTool(server, client, postPrCommentTool);
+  registerBitbucketTool(server, client, makeGetFileDiffsTool(config));
+  registerBitbucketTool(server, client, getPrContextTool);
 }

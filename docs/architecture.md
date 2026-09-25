@@ -7,12 +7,13 @@ Bitbucket Data Center
    │ webhook (PR 생성/업데이트 이벤트)
    ▼
 Spring Server
-   ├─ ① get_pr_metadata 호출 (초기 컨텍스트 확보, 결정적 처리)
-   ├─ ② AI Pro 호출 (메타데이터 + 사용 가능한 MCP tool 목록 전달)
+   ├─ ① get_pr_context 호출 (get_pr_metadata + list_changed_files 통합, 초기 컨텍스트 1회 확보, 결정적 처리)
+   ├─ ② AI Pro 호출 (메타데이터 + 변경 파일 목록 + 사용 가능한 MCP tool 목록 전달)
    │      │
    │      ▼
    │   AI Pro (agentic loop)
-   │      ├─ list_changed_files
+   │      ├─ list_changed_files (초기 컨텍스트에 이미 포함, 재조회 필요 시에만)
+   │      ├─ get_file_diffs (선별한 여러 파일 diff를 1회 호출로 일괄 조회)
    │      ├─ get_pr_diff / get_file_diff (파일 단위, 대용량 대비)
    │      ├─ get_file_content (필요 시 맥락 파악)
    │      ├─ get_pr_comments (필요 시 기존 리뷰 참고)
@@ -27,9 +28,9 @@ Spring Server
 | 단계 | 주체 | 근거 |
 |---|---|---|
 | webhook 수신 | Bitbucket → Spring | webhook payload는 트리거 신호일 뿐 diff 본문이 없어, 이후 능동 조회가 필요 |
-| get_pr_metadata | Spring | webhook payload는 스냅샷이라 신뢰성 낮음. AI 호출 전 결정적으로 최신 정보 확보 |
+| get_pr_context | Spring | webhook payload는 스냅샷이라 신뢰성 낮음. AI 호출 전 최신 메타데이터 + 변경 파일 목록을 1회 조회로 결정적 확보 (`get_pr_metadata` + `list_changed_files` 통합) |
 | AI 호출 | Spring → AI | 초기 컨텍스트 + tool 목록만 전달, 실제 탐색 범위는 AI가 diff 크기·복잡도에 따라 자율 판단 |
-| tool 자율 호출 | AI | 대용량 diff를 한 번에 전달하면 토큰 낭비·컨텍스트 초과 위험 → 필요한 만큼만 탐색 (agentic loop) |
+| tool 자율 호출 | AI | 대용량 diff를 한 번에 전달하면 토큰 낭비·컨텍스트 초과 위험 → 필요한 만큼만 탐색 (agentic loop). 여러 파일은 `get_file_diffs`로 묶어 tool-call 오버헤드 절감 |
 | 테스트케이스 생성 | AI | 구조화된 JSON 출력으로 후속 처리(엑셀 변환) 시 파싱 리스크 제거 |
 | 엑셀 생성 | Spring (내부 로직) | 결정적 변환 작업이라 AI tool-calling 불필요, MCP 서버 책임 범위 밖 (Bitbucket 도메인 아님) |
 | wiki 업로드 | Spring 또는 별도 wiki 연동 | bitbucket-mcp-server와 도메인이 다르므로 분리, 인증 체계도 별도 |
