@@ -118,9 +118,13 @@ export class BitbucketClient {
           continue;
         }
         const message = err instanceof Error ? err.message : String(err);
+        // fetch reports every connection failure as "fetch failed"; the real reason
+        // (e.g. SELF_SIGNED_CERT_IN_CHAIN, ENOTFOUND, ECONNREFUSED) is on err.cause.
+        const cause = err instanceof Error ? (err.cause as { code?: string; message?: string } | undefined) : undefined;
+        const detail = cause?.code ?? cause?.message;
         throw new BitbucketMcpError(
           "UPSTREAM_ERROR",
-          `Bitbucket 요청 실패 (timeout/network): ${message}`
+          `Bitbucket 요청 실패 (timeout/network): ${message}${detail ? ` (${detail})` : ""}`
         );
       }
 

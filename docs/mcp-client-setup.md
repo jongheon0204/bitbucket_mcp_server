@@ -124,6 +124,9 @@ stdout에 출력하는데, MCP는 stdout을 JSON-RPC 통신 채널로 쓰기 때
 ## 문제 해결
 
 서버 로그는 stderr로 출력되며, 클라이언트의 MCP 로그 화면(VS Code는 OUTPUT 패널 → MCP 서버 선택)에서 볼 수 있다.
+기동 시 `server_started` 로그에 실제 적용된 `bitbucketBaseUrl`, `tlsRejectUnauthorized`, `extraCaCerts`가 찍히므로
+mcp.json의 `env`가 의도대로 들어갔는지 여기서 먼저 확인한다 (토큰은 출력하지 않는다).
+네트워크 실패 시 에러 메시지 끝 괄호에 원인 코드가 붙는다 (예: `fetch failed (SELF_SIGNED_CERT_IN_CHAIN)`).
 
 | 증상 / 로그 | 원인 | 조치 |
 |---|---|---|

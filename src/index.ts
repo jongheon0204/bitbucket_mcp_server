@@ -19,7 +19,13 @@ async function main(): Promise<void> {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  logger.info("server_started", { transport: "stdio" });
+  // Effective settings (never the token) so a misapplied mcp.json env is visible in the log.
+  logger.info("server_started", {
+    transport: "stdio",
+    bitbucketBaseUrl: config.bitbucketBaseUrl,
+    tlsRejectUnauthorized: config.bitbucketTlsRejectUnauthorized,
+    extraCaCerts: process.env.NODE_EXTRA_CA_CERTS ?? null,
+  });
 }
 
 main().catch((err) => {

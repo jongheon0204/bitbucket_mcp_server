@@ -91,6 +91,23 @@ describe("BitbucketClient", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("includes the underlying cause code when fetch fails at the network level", async () => {
+    const fetchMock = vi.fn().mockRejectedValue(
+      new TypeError("fetch failed", { cause: { code: "SELF_SIGNED_CERT_IN_CHAIN" } })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = new BitbucketClient(config);
+    const promise = client.getJson("/foo");
+    const assertion = expect(promise).rejects.toMatchObject({
+      code: "UPSTREAM_ERROR",
+      message: "Bitbucket 요청 실패 (timeout/network): fetch failed (SELF_SIGNED_CERT_IN_CHAIN)",
+    });
+
+    await vi.runAllTimersAsync();
+    await assertion;
+  });
+
   it("retries 5xx up to a fixed 2 attempts then fails with UPSTREAM_ERROR", async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(503, {}));
     vi.stubGlobal("fetch", fetchMock);
