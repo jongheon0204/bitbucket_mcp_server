@@ -133,6 +133,7 @@ stdout에 출력하는데, MCP는 stdout을 JSON-RPC 통신 채널로 쓰기 때
 | `Cannot find module ...dist/index.js` | 빌드 안 됨 또는 경로 오류 | 1단계 빌드, 절대경로 확인 |
 | 연결 직후 끊김 / 응답 파싱 오류 | `pnpm run` 사용 등으로 stdout 오염 | `node`로 직접 실행 |
 | tool 호출 시 `AUTH_ERROR` | 토큰 오류·만료·권한 부족 | 토큰 재발급, 저장소 읽기 권한 확인 |
+| tool 호출 시 `fetch failed` (`SELF_SIGNED_CERT_IN_CHAIN` 등) | 사내 CA 인증서를 Node가 신뢰하지 않음 | `env`에 `"NODE_EXTRA_CA_CERTS": "D:/certs/사내루트CA.pem"`. 임시로는 `"BITBUCKET_TLS_REJECT_UNAUTHORIZED": "false"` (`docs/env-config.md` HTTPS 인증서 참고) |
 | tool 호출 시 `UPSTREAM_ERROR` (timeout) | 사내망에서 Bitbucket 접근 불가 | 브라우저로 BASE_URL 접속 확인, 프록시 설정 확인 |
 
 ## 보안 주의
