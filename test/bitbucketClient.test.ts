@@ -9,6 +9,7 @@ const config: AppConfig = {
   mcpTransport: "stdio",
   bitbucketApiTimeoutMs: 5000,
   retryMaxAttempts: 3,
+  bitbucketTlsRejectUnauthorized: true,
 };
 
 function jsonResponse(status: number, body: unknown): Response {

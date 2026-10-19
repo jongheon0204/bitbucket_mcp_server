@@ -12,6 +12,15 @@ const envSchema = z.object({
   MCP_TRANSPORT: z.enum(["stdio", "http"]).default("stdio"),
   BITBUCKET_API_TIMEOUT_MS: z.coerce.number().int().positive().default(10000),
   RETRY_MAX_ATTEMPTS: z.coerce.number().int().min(0).default(3),
+  BITBUCKET_TLS_REJECT_UNAUTHORIZED: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .pipe(z.enum(["true", "false", "1", "0"], {
+      errorMap: () => ({ message: "BITBUCKET_TLS_REJECT_UNAUTHORIZED must be true or false" }),
+    }))
+    .transform((v) => v === "true" || v === "1")
+    .default("true"),
 });
 
 export interface AppConfig {
@@ -21,6 +30,8 @@ export interface AppConfig {
   mcpTransport: "stdio" | "http";
   bitbucketApiTimeoutMs: number;
   retryMaxAttempts: number;
+  /** false면 Bitbucket 요청에 한해 HTTPS 인증서 검증을 끈다 (보안 위험, 테스트 용도). */
+  bitbucketTlsRejectUnauthorized: boolean;
 }
 
 /**
@@ -51,5 +62,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     mcpTransport: parsed.data.MCP_TRANSPORT,
     bitbucketApiTimeoutMs: parsed.data.BITBUCKET_API_TIMEOUT_MS,
     retryMaxAttempts: parsed.data.RETRY_MAX_ATTEMPTS,
+    bitbucketTlsRejectUnauthorized: parsed.data.BITBUCKET_TLS_REJECT_UNAUTHORIZED,
   };
 }

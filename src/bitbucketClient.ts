@@ -1,3 +1,4 @@
+import { Agent, type Dispatcher } from "undici";
 import type { AppConfig } from "./config.js";
 import { BitbucketMcpError } from "./errors.js";
 import { logger, truncateForLog } from "./logger.js";
@@ -37,7 +38,23 @@ function buildQueryString(query?: Record<string, QueryValue>): string {
 }
 
 export class BitbucketClient {
-  constructor(private readonly config: AppConfig) {}
+  /**
+   * Set only when BITBUCKET_TLS_REJECT_UNAUTHORIZED=false. Scoped to this client's
+   * Bitbucket requests, unlike NODE_TLS_REJECT_UNAUTHORIZED which disables
+   * verification process-wide.
+   */
+  private readonly insecureDispatcher?: Dispatcher;
+
+  constructor(private readonly config: AppConfig) {
+    if (!config.bitbucketTlsRejectUnauthorized) {
+      this.insecureDispatcher = new Agent({ connect: { rejectUnauthorized: false } });
+      logger.warn("tls_verification_disabled", {
+        message:
+          "BITBUCKET_TLS_REJECT_UNAUTHORIZED=false: Bitbucket HTTPS 인증서 검증을 하지 않습니다. " +
+          "중간자 공격으로 토큰이 노출될 수 있으므로 운영에서는 NODE_EXTRA_CA_CERTS 사용을 권장합니다.",
+      });
+    }
+  }
 
   async getJson<T>(path: string, query?: Record<string, QueryValue>): Promise<T> {
     const res = await this.requestWithRetry("GET", path, query);
@@ -70,7 +87,9 @@ export class BitbucketClient {
         },
         body: body !== undefined ? JSON.stringify(body) : undefined,
         signal: controller.signal,
-      });
+        // Node's global fetch accepts an undici dispatcher; lib.dom's RequestInit doesn't declare it.
+        ...(this.insecureDispatcher ? { dispatcher: this.insecureDispatcher } : {}),
+      } as RequestInit);
     } finally {
       clearTimeout(timeout);
     }
